@@ -11,7 +11,7 @@
   "engines": {
     "vscode": "^1.90.0"
   },
-  "icon": "resources/rtk-inspector.svg",
+  "icon": "resources/rtk-inspector.png",
   "categories": [
     "Other"
   ],
@@ -22,7 +22,7 @@
         {
           "id": "rtk-inspector-sidebar",
           "title": "RTK Inspector",
-          "icon": "resources/rtk-inspector.svg"
+          "icon": "resources/rtk-inspector.png"
         }
       ]
     },
