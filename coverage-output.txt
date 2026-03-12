@@ -1,0 +1,34 @@
+
+> rtk-inspector@0.1.0 test:coverage /home/pefae/src-private/rtk-inspector
+> vscode-test --coverage --coverage-output ./coverage --coverage-reporter text --coverage-reporter lcov --coverage-reporter cobertura
+
+- Resolving version...
+✔ Validated version: 1.111.0
+✔ Found existing install in /home/pefae/src-private/rtk-inspector/.vscode-test/vscode-linux-x64-1.111.0
+[90m[main 2026-03-12T08:58:56.230Z][0m update#setState disabled
+[90m[main 2026-03-12T08:58:56.237Z][0m update#ctor - updates are disabled by the environment
+[301534:0312/095856.252757:ERROR:components/viz/service/main/viz_main_impl.cc:189] Exiting GPU process due to errors during initialization
+[301600:0312/095856.398992:ERROR:gpu/ipc/client/command_buffer_proxy_impl.cc:128] ContextResult::kTransientFailure: Failed to send GpuControl.CreateCommandBuffer.
+Loading development extension at /home/pefae/src-private/rtk-inspector
+[petermefrandsen.rtk-inspector]: View container 'panel' does not exist and all views registered to it will be added to 'Explorer'.
+MCP Registry configured: https://api.mcp.github.com
+Started local extension host with pid 302332.
+Settings Sync: Account status changed from uninitialized to unavailable
+
+  RTKProvider Test Suite
+    ✔ should parse stats correctly
+  Extension Test Suite
+    ✔ Extension should be present
+    ✔ should activate
+  3 passing (100ms)
+[90m[main 2026-03-12T08:59:00.009Z][0m Extension host with pid 302332 exited with code: 0, signal: unknown.
+Exit code:   0
+------------------------|---------|----------|---------|---------|--------------------------
+File                    | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s        
+------------------------|---------|----------|---------|---------|--------------------------
+All files               |   35.12 |    83.33 |      50 |   35.12 |                          
+ chartsViewProvider.ts  |   16.26 |      100 |   33.33 |   16.26 | 14-26,29-38,41-42,45-122 
+ extension.ts           |    80.7 |    66.66 |     100 |    80.7 | 25-27,47-54              
+ rtkProvider.ts         |   56.71 |      100 |      50 |   56.71 | 33-44,50-66              
+ summaryViewProvider.ts |   18.86 |      100 |   33.33 |   18.86 | 14-26,29-38,41-42,45-105 
+------------------------|---------|----------|---------|---------|--------------------------
