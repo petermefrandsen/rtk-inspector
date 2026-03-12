@@ -46,7 +46,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register Diagnostics Command
     const diagnosticsCommand = vscode.commands.registerCommand('rtk-inspector.runDiagnostics', () => {
-        runDiagnostics();
+        runDiagnostics(rtkProvider);
     });
     context.subscriptions.push(diagnosticsCommand);
 
@@ -78,18 +78,27 @@ async function updateStatusBarItem(rtkProvider: RTKProvider): Promise<void> {
     }
 }
 
-function runDiagnostics() {
+function runDiagnostics(rtkProvider: RTKProvider) {
     outputChannel.show();
     outputChannel.appendLine('--- RTK Diagnostics ---');
     outputChannel.appendLine(`Timestamp: ${new Date().toISOString()}`);
     outputChannel.appendLine(`Platform: ${process.platform}`);
+    outputChannel.appendLine(`Remote Name: ${vscode.env.remoteName || 'local'}`);
     
-    cp.exec('rtk --version', (error, stdout, stderr) => {
+    const config = vscode.workspace.getConfiguration('rtk-inspector');
+    outputChannel.appendLine(`Config: executablePath = "${config.get('executablePath')}"`);
+    outputChannel.appendLine(`Config: useWsl = ${config.get('useWsl')}`);
+    
+    // Using internal getCommand for testing
+    const cmdVersion = (rtkProvider as any).getCommand('--version');
+    outputChannel.appendLine(`Testing Version Command: ${cmdVersion}`);
+
+    cp.exec(cmdVersion, (error, stdout, stderr) => {
         if (error) {
             outputChannel.appendLine(`RTK Check: FAILED`);
             outputChannel.appendLine(`Error: ${error.message}`);
             outputChannel.appendLine(`Stderr: ${stderr}`);
-            vscode.window.showErrorMessage('RTK CLI not found in PATH. Please ensure rtk is installed.');
+            vscode.window.showErrorMessage(`RTK CLI not found. If using WSL, ensure 'rtk-inspector.useWsl' is enabled in settings.`);
         } else {
             outputChannel.appendLine(`RTK Check: SUCCESS`);
             outputChannel.appendLine(`Version: ${stdout.trim()}`);

@@ -72,6 +72,21 @@
           "group": "navigation"
         }
       ]
+    },
+    "configuration": {
+      "title": "RTK Inspector",
+      "properties": {
+        "rtk-inspector.executablePath": {
+          "type": "string",
+          "default": "rtk",
+          "description": "Path to the RTK executable."
+        },
+        "rtk-inspector.useWsl": {
+          "type": "boolean",
+          "default": false,
+          "description": "If enabled, run RTK commands via WSL (wsl.exe -e). Useful if RTK is installed in WSL but VS Code is running on Windows host."
+        }
+      }
     }
   },
   "scripts": {
