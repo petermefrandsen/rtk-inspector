@@ -11,7 +11,7 @@
   "engines": {
     "vscode": "^1.90.0"
   },
-  "icon": "resources/rtk-inspector.png",
+  "icon": "resources/rtk-inspector.svg",
   "categories": [
     "Other"
   ],
@@ -22,14 +22,7 @@
         {
           "id": "rtk-inspector-sidebar",
           "title": "RTK Inspector",
-          "icon": "resources/rtk-inspector.png"
-        }
-      ],
-      "panel": [
-        {
-          "id": "rtk-inspector-summary-panel",
-          "title": "RTK Summary",
-          "icon": "resources/rtk-inspector.png"
+          "icon": "resources/rtk-inspector.svg"
         }
       ]
     },
@@ -39,13 +32,6 @@
           "type": "webview",
           "id": "rtk-inspector-charts",
           "name": "RTK Stats Charts"
-        }
-      ],
-      "rtk-inspector-summary-panel": [
-        {
-          "type": "webview",
-          "id": "rtk-inspector-summary",
-          "name": "RTK Summary"
         }
       ]
     },
