@@ -24,6 +24,13 @@
           "title": "RTK Inspector",
           "icon": "resources/rtk-inspector.png"
         }
+      ],
+      "panel": [
+        {
+          "id": "rtk-inspector-summary-panel",
+          "title": "RTK Summary",
+          "icon": "resources/rtk-inspector.png"
+        }
       ]
     },
     "views": {
@@ -34,7 +41,7 @@
           "name": "RTK Stats Charts"
         }
       ],
-      "panel": [
+      "rtk-inspector-summary-panel": [
         {
           "type": "webview",
           "id": "rtk-inspector-summary",
