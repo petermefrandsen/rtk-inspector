@@ -4,9 +4,15 @@ import { ChartsViewProvider } from './chartsViewProvider';
 import { SummaryViewProvider } from './summaryViewProvider';
 
 let rtkStatusBarItem: vscode.StatusBarItem;
+let outputChannel: vscode.LogOutputChannel;
 
 export function activate(context: vscode.ExtensionContext) {
-    const rtkProvider = new RTKProvider();
+    // Create Output Channel
+    outputChannel = vscode.window.createOutputChannel('RTK Inspector', { log: true });
+    context.subscriptions.push(outputChannel);
+    outputChannel.info('RTK Inspector Extension activated');
+
+    const rtkProvider = new RTKProvider(outputChannel);
 
     // Register Sidebar
     const chartsViewProvider = new ChartsViewProvider(context.extensionUri, rtkProvider);
@@ -22,11 +28,18 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register Refresh Command
     const refreshCommand = vscode.commands.registerCommand('rtk-inspector.refresh', () => {
+        outputChannel.info('Manual refresh triggered');
         chartsViewProvider.refresh();
         summaryViewProvider.refresh();
         updateStatusBarItem(rtkProvider);
     });
     context.subscriptions.push(refreshCommand);
+
+    // Register Show Logs Command
+    const showLogsCommand = vscode.commands.registerCommand('rtk-inspector.showLogs', () => {
+        outputChannel.show();
+    });
+    context.subscriptions.push(showLogsCommand);
 
     // Status Bar Item
     rtkStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
@@ -50,7 +63,9 @@ async function updateStatusBarItem(rtkProvider: RTKProvider): Promise<void> {
         rtkStatusBarItem.tooltip = `RTK Tokens Saved: ${saved} (${pct}% efficiency)`;
         rtkStatusBarItem.show();
     } else {
-        rtkStatusBarItem.hide();
+        rtkStatusBarItem.text = `$(warning) RTK: Error`;
+        rtkStatusBarItem.tooltip = `RTK command failed. Click to refresh or check 'RTK Inspector' output logs.`;
+        rtkStatusBarItem.show();
     }
 }
 

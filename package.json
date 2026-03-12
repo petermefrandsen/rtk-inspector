@@ -54,6 +54,10 @@
         "command": "rtk-inspector.refresh",
         "title": "Refresh RTK Stats",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "rtk-inspector.showLogs",
+        "title": "Show RTK Inspector Logs"
       }
     ],
     "menus": {
