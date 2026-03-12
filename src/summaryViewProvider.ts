@@ -37,6 +37,10 @@ export class SummaryViewProvider implements vscode.WebviewViewProvider {
         this._view.webview.html = this._getHtmlForWebview(stats.summary);
     }
 
+    public refresh() {
+        this.update();
+    }
+
     private _getHtmlForWebview(summary: any) {
         const formatTokens = (t: number) => {
             if (t > 1000000) {return (t / 1000000).toFixed(1) + 'M';}
