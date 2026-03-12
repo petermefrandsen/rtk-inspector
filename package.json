@@ -58,6 +58,10 @@
       {
         "command": "rtk-inspector.showLogs",
         "title": "Show RTK Inspector Logs"
+      },
+      {
+        "command": "rtk-inspector.runDiagnostics",
+        "title": "Run RTK Inspector Diagnostics"
       }
     ],
     "menus": {
