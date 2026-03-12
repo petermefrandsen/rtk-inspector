@@ -37,6 +37,10 @@ export class ChartsViewProvider implements vscode.WebviewViewProvider {
         this._view.webview.html = this._getHtmlForWebview(stats);
     }
 
+    public refresh() {
+        this.update();
+    }
+
     private _getHtmlForWebview(stats: any) {
         const dailyData = stats.daily || [];
         const labels = dailyData.map((d: any) => d.date);
