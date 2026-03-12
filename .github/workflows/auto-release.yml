@@ -92,6 +92,7 @@ jobs:
         run: pnpm exec vsce package --no-git-tag-version --no-dependencies -o "rtk-inspector-${{ needs.release.outputs.tag }}.vsix"
       - name: Publish to Open VSX Registry
         uses: HaaLeo/publish-vscode-extension@v2
+        continue-on-error: true
         with:
           pat: ${{ secrets.OPEN_VSX_TOKEN }}
           extensionFile: "rtk-inspector-${{ needs.release.outputs.tag }}.vsix"
