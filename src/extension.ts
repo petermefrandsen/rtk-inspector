@@ -2,15 +2,18 @@ import * as vscode from 'vscode';
 import { RTKProvider } from './rtkProvider';
 import { ChartsViewProvider } from './chartsViewProvider';
 import { SummaryViewProvider } from './summaryViewProvider';
+import * as cp from 'child_process';
 
 let rtkStatusBarItem: vscode.StatusBarItem;
-let outputChannel: vscode.LogOutputChannel;
+let outputChannel: vscode.OutputChannel;
 
 export function activate(context: vscode.ExtensionContext) {
-    // Create Output Channel
-    outputChannel = vscode.window.createOutputChannel('RTK Inspector', { log: true });
+    // Create Standard Output Channel (more reliable than LogOutputChannel for simple text)
+    outputChannel = vscode.window.createOutputChannel('RTK Inspector');
     context.subscriptions.push(outputChannel);
-    outputChannel.info('RTK Inspector Extension activated');
+    
+    const timestamp = new Date().toISOString();
+    outputChannel.appendLine(`[${timestamp}] [INFO] RTK Inspector Extension activated`);
 
     const rtkProvider = new RTKProvider(outputChannel);
 
@@ -28,7 +31,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register Refresh Command
     const refreshCommand = vscode.commands.registerCommand('rtk-inspector.refresh', () => {
-        outputChannel.info('Manual refresh triggered');
+        outputChannel.appendLine(`[${new Date().toISOString()}] [INFO] Manual refresh triggered`);
         chartsViewProvider.refresh();
         summaryViewProvider.refresh();
         updateStatusBarItem(rtkProvider);
@@ -40,6 +43,12 @@ export function activate(context: vscode.ExtensionContext) {
         outputChannel.show();
     });
     context.subscriptions.push(showLogsCommand);
+
+    // Register Diagnostics Command
+    const diagnosticsCommand = vscode.commands.registerCommand('rtk-inspector.runDiagnostics', () => {
+        runDiagnostics();
+    });
+    context.subscriptions.push(diagnosticsCommand);
 
     // Status Bar Item
     rtkStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
@@ -67,6 +76,28 @@ async function updateStatusBarItem(rtkProvider: RTKProvider): Promise<void> {
         rtkStatusBarItem.tooltip = `RTK command failed. Click to refresh or check 'RTK Inspector' output logs.`;
         rtkStatusBarItem.show();
     }
+}
+
+function runDiagnostics() {
+    outputChannel.show();
+    outputChannel.appendLine('--- RTK Diagnostics ---');
+    outputChannel.appendLine(`Timestamp: ${new Date().toISOString()}`);
+    outputChannel.appendLine(`Platform: ${process.platform}`);
+    
+    cp.exec('rtk --version', (error, stdout, stderr) => {
+        if (error) {
+            outputChannel.appendLine(`RTK Check: FAILED`);
+            outputChannel.appendLine(`Error: ${error.message}`);
+            outputChannel.appendLine(`Stderr: ${stderr}`);
+            vscode.window.showErrorMessage('RTK CLI not found in PATH. Please ensure rtk is installed.');
+        } else {
+            outputChannel.appendLine(`RTK Check: SUCCESS`);
+            outputChannel.appendLine(`Version: ${stdout.trim()}`);
+        }
+    });
+
+    outputChannel.appendLine(`PATH: ${process.env.PATH}`);
+    outputChannel.appendLine('-----------------------');
 }
 
 export function deactivate() {}
