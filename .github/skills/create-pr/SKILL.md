@@ -183,11 +183,21 @@ Keep the summary factual and concise. Do not pad with filler.
    - If any command fails with a missing-scope error, ask the user to run
      `gh auth refresh -s project` and retry.
 
+## PR Lifecycle & Safety
+
+- **Never merge or close a PR**: Your role ends at creating the PR. You MUST NOT use `gh pr merge`, `gh pr close`, or any other tool to merge or close the Pull Request yourself.
+- **Never push directly to main**: All changes must go through a Pull Request. You MUST NOT commit or push directly to the `main` branch, even for small fixes or "fixing the build".
+- **Wait for CI and User Approval**: A Pull Request is the final verification step. Even if you believe the code is perfect, you must wait for the project's automated CI checks (GitHub Actions) to pass and for the user to manually review and approve the changes.
+- **Release Process**: The project's release process is triggered by merging PRs into `main`. By merging prematurely, you bypass safety checks and risk breaking the automated release pipeline.
+
 ## Guardrails
 
 - Never create a PR without user confirmation of the title.
 - Never skip the PR template structure.
 - Never use `--no-verify` or force push.
+- **NEVER merge a PR.**
+- **NEVER close a PR.**
+- **NEVER push directly to the `main` branch.**
 - If `gh` is unavailable or unauthenticated, ask the user for guidance.
 - If the title does not match the required pattern, reject it and ask again.
 0
