@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { RTKProvider } from './rtkProvider';
 import { ChartsViewProvider } from './chartsViewProvider';
-import { SummaryViewProvider } from './summaryViewProvider';
 import * as cp from 'child_process';
 
 let rtkStatusBarItem: vscode.StatusBarItem;
@@ -23,17 +22,10 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.window.registerWebviewViewProvider(ChartsViewProvider.viewType, chartsViewProvider)
     );
 
-    // Register Summary Panel
-    const summaryViewProvider = new SummaryViewProvider(context.extensionUri, rtkProvider);
-    context.subscriptions.push(
-        vscode.window.registerWebviewViewProvider(SummaryViewProvider.viewType, summaryViewProvider)
-    );
-
     // Register Refresh Command
     const refreshCommand = vscode.commands.registerCommand('rtk-inspector.refresh', () => {
         outputChannel.appendLine(`[${new Date().toISOString()}] [INFO] Manual refresh triggered`);
         chartsViewProvider.refresh();
-        summaryViewProvider.refresh();
         updateStatusBarItem(rtkProvider);
     });
     context.subscriptions.push(refreshCommand);
@@ -90,10 +82,11 @@ function runDiagnostics(rtkProvider: RTKProvider) {
     outputChannel.appendLine(`Config: useWsl = ${config.get('useWsl')}`);
     
     // Using internal getCommand for testing
-    const cmdVersion = (rtkProvider as any).getCommand('--version');
+    const cmdVersion = rtkProvider.getCommand('--version');
     outputChannel.appendLine(`Testing Version Command: ${cmdVersion}`);
 
-    cp.exec(cmdVersion, (error, stdout, stderr) => {
+    const execOptions = rtkProvider.getExecOptions();
+    cp.exec(cmdVersion, execOptions, (error, stdout, stderr) => {
         if (error) {
             outputChannel.appendLine(`RTK Check: FAILED`);
             outputChannel.appendLine(`Error: ${error.message}`);
@@ -101,7 +94,7 @@ function runDiagnostics(rtkProvider: RTKProvider) {
             vscode.window.showErrorMessage(`RTK CLI not found. If using WSL, ensure 'rtk-inspector.useWsl' is enabled in settings.`);
         } else {
             outputChannel.appendLine(`RTK Check: SUCCESS`);
-            outputChannel.appendLine(`Version: ${stdout.trim()}`);
+            outputChannel.appendLine(`Version: ${stdout.toString().trim()}`);
         }
     });
 
