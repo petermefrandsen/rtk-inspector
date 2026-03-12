@@ -31,7 +31,8 @@ export class RTKProvider {
         return new Promise((resolve) => {
             cp.exec('rtk gain -d -f json', (error, stdout, stderr) => {
                 if (error) {
-                    console.error(`Error: ${error.message}`);
+                    console.error(`[RTK Error] Command failed: ${error.message}`);
+                    if (stderr) {console.error(`[RTK Stderr]: ${stderr}`);}
                     resolve(null);
                     return;
                 }
@@ -39,7 +40,8 @@ export class RTKProvider {
                     const stats = JSON.parse(stdout) as RTKStats;
                     resolve(stats);
                 } catch (e) {
-                    console.error(`Failed to parse JSON: ${e}`);
+                    console.error(`[RTK Error] Failed to parse JSON: ${e}`);
+                    console.error(`[RTK Output]: ${stdout}`);
                     resolve(null);
                 }
             });
@@ -50,7 +52,8 @@ export class RTKProvider {
         return new Promise((resolve) => {
             cp.exec('rtk gain -p -f json', (error, stdout, stderr) => {
                 if (error) {
-                    console.error(`Error: ${error.message}`);
+                    console.error(`[RTK Project Error] Command failed: ${error.message}`);
+                    if (stderr) {console.error(`[RTK Project Stderr]: ${stderr}`);}
                     resolve(null);
                     return;
                 }
@@ -58,7 +61,8 @@ export class RTKProvider {
                     const stats = JSON.parse(stdout) as RTKStats;
                     resolve(stats);
                 } catch (e) {
-                    console.error(`Failed to parse JSON: ${e}`);
+                    console.error(`[RTK Project Error] Failed to parse JSON: ${e}`);
+                    console.error(`[RTK Project Output]: ${stdout}`);
                     resolve(null);
                 }
             });
