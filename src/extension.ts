@@ -46,7 +46,7 @@ async function updateStatusBarItem(rtkProvider: RTKProvider): Promise<void> {
     if (stats && stats.summary) {
         const saved = stats.summary.total_saved.toLocaleString();
         const pct = (stats.summary.avg_savings_pct * 100).toFixed(1);
-        rtkStatusBarItem.text = `$(rocket) RTK: ${saved} (${pct}%)`;
+        rtkStatusBarItem.text = `RTK: ${saved} (${pct} %) tokens saved`;
         rtkStatusBarItem.tooltip = `RTK Tokens Saved: ${saved} (${pct}% efficiency)`;
         rtkStatusBarItem.show();
     } else {
