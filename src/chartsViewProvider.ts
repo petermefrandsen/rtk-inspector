@@ -22,6 +22,17 @@ export class ChartsViewProvider implements vscode.WebviewViewProvider {
             localResourceRoots: [this._extensionUri]
         };
 
+        webviewView.webview.onDidReceiveMessage(data => {
+            switch (data.command) {
+                case 'showLogs':
+                    vscode.commands.executeCommand('rtk-inspector.showLogs');
+                    break;
+                case 'openSettings':
+                    vscode.commands.executeCommand('workbench.action.openSettings', '@ext:PeterMEFrandsen.rtk-inspector');
+                    break;
+            }
+        });
+
         this.update();
     }
 
@@ -30,7 +41,22 @@ export class ChartsViewProvider implements vscode.WebviewViewProvider {
         
         const stats = await this._rtkProvider.getStats();
         if (!stats) {
-            this._view.webview.html = `<div>Failed to load stats</div>`;
+            this._view.webview.html = `
+                <div style="padding: 20px; text-align: center;">
+                    <p>Failed to load RTK stats.</p>
+                    <p style="font-size: 0.9em; opacity: 0.8;">Check if <b>rtk</b> CLI is installed and in your PATH.</p>
+                    <p style="margin-top: 20px;">
+                        <button onclick="sendMsg('showLogs')" style="background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 5px 10px; cursor: pointer; border-radius: 2px;">View Logs</button>
+                    </p>
+                    <p style="margin-top: 10px;">
+                        <button onclick="sendMsg('openSettings')" style="background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); border: none; padding: 5px 10px; cursor: pointer; border-radius: 2px;">Open Settings</button>
+                    </p>
+                </div>
+                <script>
+                    const vscode = acquireVsCodeApi();
+                    function sendMsg(cmd) { vscode.postMessage({ command: cmd }); }
+                </script>
+            `;
             return;
         }
 

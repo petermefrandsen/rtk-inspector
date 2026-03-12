@@ -35,10 +35,29 @@ export class RTKProvider {
         this._outputChannel?.appendLine(`[${timestamp}] [${type}] ${message}`);
     }
 
+    private getCommand(args: string): string {
+        const config = vscode.workspace.getConfiguration('rtk-inspector');
+        const executable = config.get<string>('executablePath', 'rtk');
+        const useWsl = config.get<boolean>('useWsl', false);
+        
+        // If extension is already running in WSL, we don't need wsl.exe prefix
+        const isRunningInWsl = vscode.env.remoteName === 'wsl';
+        
+        const fullCommand = `${executable} ${args}`;
+        
+        if (useWsl && !isRunningInWsl && process.platform === 'win32') {
+            return `wsl.exe -e ${fullCommand}`;
+        }
+        
+        return fullCommand;
+    }
+
     public async getStats(): Promise<RTKStats | null> {
         return new Promise((resolve) => {
-            this.log('Fetching RTK stats: rtk gain -d -f json');
-            cp.exec('rtk gain -d -f json', (error, stdout, stderr) => {
+            const cmd = this.getCommand('gain -d -f json');
+            this.log(`Executing: ${cmd}`);
+            
+            cp.exec(cmd, (error, stdout, stderr) => {
                 if (error) {
                     this.log(`Command failed: ${error.message}`, 'ERROR');
                     if (stderr) {this.log(`Stderr: ${stderr}`, 'ERROR');}
@@ -59,8 +78,10 @@ export class RTKProvider {
 
     public async getProjectStats(): Promise<RTKStats | null> {
         return new Promise((resolve) => {
-            this.log('Fetching RTK project stats: rtk gain -p -f json');
-            cp.exec('rtk gain -p -f json', (error, stdout, stderr) => {
+            const cmd = this.getCommand('gain -p -f json');
+            this.log(`Executing: ${cmd}`);
+            
+            cp.exec(cmd, (error, stdout, stderr) => {
                 if (error) {
                     this.log(`Project Command failed: ${error.message}`, 'ERROR');
                     if (stderr) {this.log(`Project Stderr: ${stderr}`, 'ERROR');}
