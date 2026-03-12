@@ -3,7 +3,7 @@
   "displayName": "RTK Inspector",
   "description": "Visualizes token savings and command stats from rtk CLI.",
   "version": "0.1.0",
-  "publisher": "petermefrandsen",
+  "publisher": "PeterMEFrandsen",
   "repository": {
     "type": "git",
     "url": "https://github.com/petermefrandsen/rtk-inspector"
