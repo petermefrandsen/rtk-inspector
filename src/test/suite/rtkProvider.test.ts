@@ -4,8 +4,9 @@ import proxyquire = require('proxyquire');
 suite('RTKProvider Test Suite', () => {
     test('should handle successful RTK output', async () => {
         const mockStats = { summary: { total_saved: 100, avg_savings_pct: 25 } };
-        const mockExec = (cmd: string, callback: any) => {
-            callback(null, JSON.stringify(mockStats), '');
+        const mockExec = (cmd: string, options: any, callback?: any) => {
+            const cb = typeof options === 'function' ? options : callback;
+            cb(null, JSON.stringify(mockStats), '');
         };
 
         const { RTKProvider: MockedProvider } = proxyquire('../../rtkProvider', {
@@ -18,8 +19,9 @@ suite('RTKProvider Test Suite', () => {
     });
 
     test('should return null on command error', async () => {
-        const mockExec = (cmd: string, callback: any) => {
-            callback(new Error('CMD_FAILED'), '', 'some error');
+        const mockExec = (cmd: string, options: any, callback?: any) => {
+            const cb = typeof options === 'function' ? options : callback;
+            cb(new Error('CMD_FAILED'), '', 'some error');
         };
 
         const { RTKProvider: MockedProvider } = proxyquire('../../rtkProvider', {
@@ -32,8 +34,9 @@ suite('RTKProvider Test Suite', () => {
     });
 
     test('should return null on invalid JSON', async () => {
-        const mockExec = (cmd: string, callback: any) => {
-            callback(null, 'invalid-json', '');
+        const mockExec = (cmd: string, options: any, callback?: any) => {
+            const cb = typeof options === 'function' ? options : callback;
+            cb(null, 'invalid-json', '');
         };
 
         const { RTKProvider: MockedProvider } = proxyquire('../../rtkProvider', {
