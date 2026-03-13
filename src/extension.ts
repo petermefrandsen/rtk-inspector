@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import { RTKProvider } from './rtkProvider';
 import { ChartsViewProvider } from './chartsViewProvider';
+import { CLIUsageProvider } from './cliUsageProvider';
 import * as cp from 'child_process';
 
-let rtkStatusBarItem: vscode.StatusBarItem;
 let outputChannel: vscode.OutputChannel;
 
 export function activate(context: vscode.ExtensionContext) {
@@ -15,9 +15,10 @@ export function activate(context: vscode.ExtensionContext) {
     outputChannel.appendLine(`[${timestamp}] [INFO] RTK Inspector Extension activated`);
 
     const rtkProvider = new RTKProvider(outputChannel);
+    const cliUsageProvider = new CLIUsageProvider();
 
     // Register Sidebar
-    const chartsViewProvider = new ChartsViewProvider(context.extensionUri, rtkProvider);
+    const chartsViewProvider = new ChartsViewProvider(context.extensionUri, rtkProvider, cliUsageProvider);
     context.subscriptions.push(
         vscode.window.registerWebviewViewProvider(ChartsViewProvider.viewType, chartsViewProvider)
     );
@@ -26,7 +27,6 @@ export function activate(context: vscode.ExtensionContext) {
     const refreshCommand = vscode.commands.registerCommand('rtk-inspector.refresh', () => {
         outputChannel.appendLine(`[${new Date().toISOString()}] [INFO] Manual refresh triggered`);
         chartsViewProvider.refresh();
-        updateStatusBarItem(rtkProvider);
     });
     context.subscriptions.push(refreshCommand);
 
@@ -41,33 +41,6 @@ export function activate(context: vscode.ExtensionContext) {
         runDiagnostics(rtkProvider);
     });
     context.subscriptions.push(diagnosticsCommand);
-
-    // Status Bar Item
-    rtkStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    rtkStatusBarItem.command = 'rtk-inspector.refresh';
-    context.subscriptions.push(rtkStatusBarItem);
-
-    // Initial updates
-    updateStatusBarItem(rtkProvider);
-
-    // Refresh every 5 minutes
-    const interval = setInterval(() => updateStatusBarItem(rtkProvider), 5 * 60 * 1000);
-    context.subscriptions.push({ dispose: () => clearInterval(interval) });
-}
-
-async function updateStatusBarItem(rtkProvider: RTKProvider): Promise<void> {
-    const stats = await rtkProvider.getStats();
-    if (stats && stats.summary) {
-        const saved = stats.summary.total_saved.toLocaleString();
-        const pct = stats.summary.avg_savings_pct.toFixed(1);
-        rtkStatusBarItem.text = `RTK: ${saved} (${pct} %) tokens saved`;
-        rtkStatusBarItem.tooltip = `RTK Tokens Saved: ${saved} (${pct}% efficiency)`;
-        rtkStatusBarItem.show();
-    } else {
-        rtkStatusBarItem.text = `$(warning) RTK: Error`;
-        rtkStatusBarItem.tooltip = `RTK command failed. Click to refresh or check 'RTK Inspector' output logs.`;
-        rtkStatusBarItem.show();
-    }
 }
 
 function runDiagnostics(rtkProvider: RTKProvider) {
