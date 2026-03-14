@@ -1,13 +1,28 @@
 {
   "name": "rtk-inspector",
   "displayName": "RTK Inspector",
-  "description": "Visualizes token savings and command stats from rtk CLI.",
+  "description": "Visualize RTK savings alongside AI CLI token usage in VS Code.",
   "version": "0.1.0",
   "publisher": "PeterMEFrandsen",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/petermefrandsen/rtk-inspector"
   },
+  "homepage": "https://github.com/petermefrandsen/rtk-inspector#readme",
+  "bugs": {
+    "url": "https://github.com/petermefrandsen/rtk-inspector/issues"
+  },
+  "keywords": [
+    "rtk",
+    "tokens",
+    "analytics",
+    "copilot",
+    "claude",
+    "gemini",
+    "visualization",
+    "productivity"
+  ],
   "engines": {
     "vscode": "^1.90.0"
   },
