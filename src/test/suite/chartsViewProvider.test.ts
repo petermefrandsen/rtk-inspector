@@ -83,7 +83,7 @@ suite('ChartsViewProvider Test Suite', () => {
 
         const html = mockView._getHtml();
         assert.ok(html.includes('<!DOCTYPE html>'), 'Should produce full HTML page');
-        assert.ok(html.includes('Chart.js'), 'Should include Chart.js script');
+        assert.ok(html.includes('cdn.jsdelivr.net'), 'Should include Chart.js CDN script');
         assert.ok(html.includes('42'), 'Should include RTK command count');
     });
 
