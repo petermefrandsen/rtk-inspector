@@ -104,6 +104,7 @@ export class ChartsViewProvider implements vscode.WebviewViewProvider {
             'GitHub Copilot': '#3B82F6',
             'Claude Code':    '#F59E0B',
             'Gemini CLI':     '#8B5CF6',
+            'Codex':          '#EC4899',
         };
         const perCliOverlap = cliUsage.by_cli.map(c => ({
             name: c.name,

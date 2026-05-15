@@ -28,6 +28,8 @@ export class CLIUsageProvider {
      * Currently supports:
      *  - GitHub Copilot CLI (~/.copilot/session-state)
      *  - Claude Code (~/.claude/projects)
+     *  - Gemini CLI (~/.gemini/tmp)
+     *  - Codex (~/.codex/sessions)
      */
     public getUsage(): CLIUsage {
         const byCli: CLITotals[] = [];
@@ -40,6 +42,9 @@ export class CLIUsageProvider {
 
         const gemini = this._readGeminiUsage();
         if (gemini) {byCli.push(gemini);}
+
+        const codex = this._readCodexUsage();
+        if (codex) {byCli.push(codex);}
 
         return this._aggregate(byCli);
     }
@@ -240,6 +245,90 @@ export class CLIUsageProvider {
 
         return {
             name: 'Gemini CLI',
+            total_tokens: daily.reduce((s, d) => s + d.tokens, 0),
+            total_tool_calls: totalTurns,
+            daily,
+        };
+    }
+
+    // -------------------------------------------------------------------------
+    // Codex
+    // Reads ~/.codex/sessions/YYYY/MM/DD/*.jsonl
+    // Counts exec_command function calls as tool calls.
+    // Uses the last cumulative total_token_usage per session (grows over session).
+    // -------------------------------------------------------------------------
+    private _readCodexUsage(): CLITotals | null {
+        const sessionsDir = path.join(os.homedir(), '.codex', 'sessions');
+        if (!fs.existsSync(sessionsDir)) {return null;}
+
+        const dailyMap = new Map<string, number>();
+        let totalTurns = 0;
+
+        const processFile = (filePath: string): void => {
+            const rel = path.relative(sessionsDir, filePath);
+            const parts = rel.split(path.sep);
+            // Expected: YYYY/MM/DD/uuid.jsonl
+            if (parts.length < 4) {return;}
+            const sessionDate = `${parts[0]}-${parts[1]}-${parts[2]}`;
+
+            let lastTotalTokens = 0;
+            let sessionTurns = 0;
+            let content: string;
+            try {
+                content = fs.readFileSync(filePath, 'utf8');
+            } catch {
+                return;
+            }
+
+            for (const line of content.split('\n')) {
+                if (!line.trim()) {continue;}
+                try {
+                    const ev = JSON.parse(line);
+                    if (ev.type === 'response_item' &&
+                        ev.payload?.type === 'function_call' &&
+                        ev.payload?.name === 'exec_command') {
+                        sessionTurns++;
+                    }
+                    if (ev.type === 'event_msg' &&
+                        ev.payload?.type === 'token_count' &&
+                        ev.payload?.info?.total_token_usage?.total_tokens != null) {
+                        lastTotalTokens = ev.payload.info.total_token_usage.total_tokens;
+                    }
+                } catch {
+                    // skip malformed lines
+                }
+            }
+
+            if (lastTotalTokens > 0) {
+                dailyMap.set(sessionDate, (dailyMap.get(sessionDate) ?? 0) + lastTotalTokens);
+            }
+            totalTurns += sessionTurns;
+        };
+
+        const walkDir = (dir: string): void => {
+            let entries: fs.Dirent[];
+            try {
+                entries = fs.readdirSync(dir, { withFileTypes: true });
+            } catch {
+                return;
+            }
+            for (const entry of entries) {
+                const fullPath = path.join(dir, entry.name);
+                if (entry.isDirectory()) {walkDir(fullPath);}
+                else if (entry.isFile() && entry.name.endsWith('.jsonl')) {processFile(fullPath);}
+            }
+        };
+
+        walkDir(sessionsDir);
+
+        if (dailyMap.size === 0 && totalTurns === 0) {return null;}
+
+        const daily: CLIDailyUsage[] = Array.from(dailyMap.entries())
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([date, tokens]) => ({ date, tokens }));
+
+        return {
+            name: 'Codex',
             total_tokens: daily.reduce((s, d) => s + d.tokens, 0),
             total_tool_calls: totalTurns,
             daily,
