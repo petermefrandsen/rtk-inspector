@@ -7,10 +7,10 @@ import proxyquire = require('proxyquire');
 
 /** Minimal Dirent-like object */
 function dir(name: string) {
-    return { name, isDirectory: () => true };
+    return { name, isDirectory: () => true, isFile: () => false };
 }
 function file(name: string) {
-    return { name, isDirectory: () => false };
+    return { name, isDirectory: () => false, isFile: () => true };
 }
 
 const HOME = '/home/testuser';
@@ -443,6 +443,166 @@ suite('CLIUsageProvider Test Suite', () => {
             const provider = loadProvider(mockFs, mockOs);
             const usage = provider.getUsage();
             assert.ok(!usage.by_cli.find((c: any) => c.name === 'Gemini CLI'));
+        });
+    });
+
+    // -----------------------------------------------------------------------
+    suite('Codex reader', () => {
+        const sessionsDir = `${HOME}/.codex/sessions`;
+        const Y = '2024', M = '06', D = '01';
+        const dayDir = `${sessionsDir}/${Y}/${M}/${D}`;
+        const rolloutPath = `${dayDir}/rollout-2024-06-01T10-00-00-uuid.jsonl`;
+
+        // Line builders matching the Codex rollout JSONL format
+        function shellCmdLine() {
+            return JSON.stringify({ type: 'response_item', payload: { type: 'function_call', name: 'shell_command' } });
+        }
+        function localShellCallLine() {
+            return JSON.stringify({ type: 'response_item', payload: { type: 'local_shell_call' } });
+        }
+        function otherToolLine(name: string) {
+            return JSON.stringify({ type: 'response_item', payload: { type: 'function_call', name } });
+        }
+        function tokenCountLine(total: number) {
+            return JSON.stringify({
+                type: 'event_msg',
+                payload: { type: 'token_count', info: { total_token_usage: { total_tokens: total } } },
+            });
+        }
+
+        // Builds a standard 4-level deep mock tree for a single rollout file
+        function buildCodexMocks(content: string, extraReaddirMap?: Record<string, any[]>) {
+            return buildMocks({
+                existsMap: { [sessionsDir]: true },
+                readdirMap: {
+                    [sessionsDir]:                    [dir(Y)],
+                    [`${sessionsDir}/${Y}`]:          [dir(M)],
+                    [`${sessionsDir}/${Y}/${M}`]:     [dir(D)],
+                    [dayDir]:                         [file('rollout-2024-06-01T10-00-00-uuid.jsonl')],
+                    ...extraReaddirMap,
+                },
+                fileMap: { [rolloutPath]: content },
+            });
+        }
+
+        test('should parse tokens and shell_command tool calls', () => {
+            const content = [shellCmdLine(), shellCmdLine(), tokenCountLine(1000), ''].join('\n');
+            const { mockFs, mockOs } = buildCodexMocks(content);
+            const provider = loadProvider(mockFs, mockOs);
+            const usage = provider.getUsage();
+
+            const codex = usage.by_cli.find((c: any) => c.name === 'Codex');
+            assert.ok(codex);
+            assert.strictEqual(codex.total_tokens, 1000);
+            assert.strictEqual(codex.total_tool_calls, 2);
+            assert.strictEqual(codex.daily[0].date, '2024-06-01');
+            assert.strictEqual(codex.daily[0].tokens, 1000);
+        });
+
+        test('should count local_shell_call items as tool calls', () => {
+            const content = [localShellCallLine(), localShellCallLine(), tokenCountLine(500), ''].join('\n');
+            const { mockFs, mockOs } = buildCodexMocks(content);
+            const provider = loadProvider(mockFs, mockOs);
+            const codex = provider.getUsage().by_cli.find((c: any) => c.name === 'Codex');
+            assert.ok(codex);
+            assert.strictEqual(codex.total_tool_calls, 2);
+        });
+
+        test('should use last cumulative token count per file (not sum of all entries)', () => {
+            const content = [tokenCountLine(300), tokenCountLine(700), tokenCountLine(1200), ''].join('\n');
+            const { mockFs, mockOs } = buildCodexMocks(content);
+            const provider = loadProvider(mockFs, mockOs);
+            const codex = provider.getUsage().by_cli.find((c: any) => c.name === 'Codex');
+            assert.ok(codex);
+            assert.strictEqual(codex.total_tokens, 1200);
+        });
+
+        test('should aggregate multiple session files on the same day', () => {
+            const file2Name = 'rollout-2024-06-01T12-00-00-uuid2.jsonl';
+            const file2Path = `${dayDir}/${file2Name}`;
+            const content1 = [shellCmdLine(), tokenCountLine(400), ''].join('\n');
+            const content2 = [shellCmdLine(), shellCmdLine(), tokenCountLine(600), ''].join('\n');
+
+            const { mockFs, mockOs } = buildMocks({
+                existsMap: { [sessionsDir]: true },
+                readdirMap: {
+                    [sessionsDir]:                    [dir(Y)],
+                    [`${sessionsDir}/${Y}`]:          [dir(M)],
+                    [`${sessionsDir}/${Y}/${M}`]:     [dir(D)],
+                    [dayDir]:                         [
+                        file('rollout-2024-06-01T10-00-00-uuid.jsonl'),
+                        file(file2Name),
+                    ],
+                },
+                fileMap: { [rolloutPath]: content1, [file2Path]: content2 },
+            });
+            const provider = loadProvider(mockFs, mockOs);
+            const codex = provider.getUsage().by_cli.find((c: any) => c.name === 'Codex');
+            assert.ok(codex);
+            assert.strictEqual(codex.total_tokens, 1000);
+            assert.strictEqual(codex.total_tool_calls, 3);
+            assert.strictEqual(codex.daily[0].date, '2024-06-01');
+            assert.strictEqual(codex.daily[0].tokens, 1000);
+        });
+
+        test('should return null when sessionsDir missing', () => {
+            const { mockFs, mockOs } = buildMocks({ existsMap: {}, readdirMap: {}, fileMap: {} });
+            const provider = loadProvider(mockFs, mockOs);
+            assert.ok(!provider.getUsage().by_cli.find((c: any) => c.name === 'Codex'));
+        });
+
+        test('should return null when no token data is found', () => {
+            const content = [shellCmdLine(), shellCmdLine(), ''].join('\n');
+            const { mockFs, mockOs } = buildCodexMocks(content);
+            const provider = loadProvider(mockFs, mockOs);
+            assert.ok(!provider.getUsage().by_cli.find((c: any) => c.name === 'Codex'));
+        });
+
+        test('should skip malformed JSONL lines gracefully', () => {
+            const content = ['{ NOT VALID JSON :', shellCmdLine(), tokenCountLine(800), ''].join('\n');
+            const { mockFs, mockOs } = buildCodexMocks(content);
+            const provider = loadProvider(mockFs, mockOs);
+            const codex = provider.getUsage().by_cli.find((c: any) => c.name === 'Codex');
+            assert.ok(codex);
+            assert.strictEqual(codex.total_tokens, 800);
+            assert.strictEqual(codex.total_tool_calls, 1);
+        });
+
+        test('should skip files not at YYYY/MM/DD depth (fewer than 4 path parts)', () => {
+            const shallowPath = `${sessionsDir}/stray.jsonl`;
+            const { mockFs, mockOs } = buildMocks({
+                existsMap: { [sessionsDir]: true },
+                readdirMap: { [sessionsDir]: [file('stray.jsonl')] },
+                fileMap: { [shallowPath]: [shellCmdLine(), tokenCountLine(999)].join('\n') },
+            });
+            const provider = loadProvider(mockFs, mockOs);
+            assert.ok(!provider.getUsage().by_cli.find((c: any) => c.name === 'Codex'));
+        });
+
+        test('should not count function_call items with names other than shell_command', () => {
+            const content = [otherToolLine('some_other_tool'), otherToolLine('exec_command'), tokenCountLine(200), ''].join('\n');
+            const { mockFs, mockOs } = buildCodexMocks(content);
+            const provider = loadProvider(mockFs, mockOs);
+            const codex = provider.getUsage().by_cli.find((c: any) => c.name === 'Codex');
+            assert.ok(codex);
+            assert.strictEqual(codex.total_tool_calls, 0);
+        });
+
+        test('should continue gracefully when a session file cannot be read', () => {
+            const mockOs = { homedir: () => HOME };
+            const mockFs = {
+                existsSync: (p: string) => p === sessionsDir,
+                readdirSync: (p: string, _opts?: any) => {
+                    if (p === sessionsDir)                    {return [dir(Y)];}
+                    if (p === `${sessionsDir}/${Y}`)          {return [dir(M)];}
+                    if (p === `${sessionsDir}/${Y}/${M}`)     {return [dir(D)];}
+                    if (p === dayDir)                         {return [file('rollout.jsonl')];}
+                    throw new Error(`unexpected readdirSync call: ${p}`);
+                },
+                readFileSync: () => { throw new Error('permission denied'); },
+            };
+            const provider = loadProvider(mockFs, mockOs);
+            assert.ok(!provider.getUsage().by_cli.find((c: any) => c.name === 'Codex'));
         });
     });
 
