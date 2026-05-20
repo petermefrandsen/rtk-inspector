@@ -253,8 +253,8 @@ export class CLIUsageProvider {
 
     // -------------------------------------------------------------------------
     // Codex
-    // Reads ~/.codex/sessions/YYYY/MM/DD/*.jsonl
-    // Counts exec_command function calls as tool calls.
+    // Reads ~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl
+    // Counts shell_command function calls and local_shell_call items as tool calls.
     // Uses the last cumulative total_token_usage per session (grows over session).
     // -------------------------------------------------------------------------
     private _readCodexUsage(): CLITotals | null {
@@ -284,9 +284,10 @@ export class CLIUsageProvider {
                 if (!line.trim()) {continue;}
                 try {
                     const ev = JSON.parse(line);
-                    if (ev.type === 'response_item' &&
-                        ev.payload?.type === 'function_call' &&
-                        ev.payload?.name === 'exec_command') {
+                    if (ev.type === 'response_item' && (
+                        (ev.payload?.type === 'function_call' && ev.payload?.name === 'shell_command') ||
+                        ev.payload?.type === 'local_shell_call'
+                    )) {
                         sessionTurns++;
                     }
                     if (ev.type === 'event_msg' &&
@@ -321,7 +322,7 @@ export class CLIUsageProvider {
 
         walkDir(sessionsDir);
 
-        if (dailyMap.size === 0 && totalTurns === 0) {return null;}
+        if (dailyMap.size === 0) {return null;}
 
         const daily: CLIDailyUsage[] = Array.from(dailyMap.entries())
             .sort(([a], [b]) => a.localeCompare(b))
