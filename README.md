@@ -39,6 +39,7 @@ RTK Inspector combines RTK output with local session data from supported AI CLIs
 | **GitHub Copilot** | `~/.copilot/session-state/*/events.jsonl` |
 | **Gemini CLI** | `~/.gemini/tmp/*/chats/session-*.json` |
 | **Claude Code** | `~/.claude/projects/**/*.jsonl` |
+| **Codex** | `~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl` |
 
 Only days where RTK has data are included in the CLI comparison, so the numbers stay aligned.
 
@@ -81,6 +82,8 @@ If the dashboard does not load as expected:
 4. On Windows + WSL setups, enable `rtk-inspector.useWsl`.
 
 For Gemini CLI, the extension uses message output and thought tokens from each session entry to avoid inflating totals with cumulative input counts.
+
+For Codex, the extension reads JSONL rollout files and takes the last cumulative token snapshot per session, counting `shell_command` function calls and `local_shell_call` items as tool calls.
 
 ## Development
 
