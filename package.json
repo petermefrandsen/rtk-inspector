@@ -127,5 +127,8 @@
   },
   "dependencies": {
     "chart.js": "^4.5.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@vscode/vsce-sign", "esbuild", "keytar"]
   }
 }
